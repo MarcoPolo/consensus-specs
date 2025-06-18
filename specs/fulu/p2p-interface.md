@@ -170,6 +170,25 @@ Some gossip meshes are upgraded in the Fulu fork to support upgraded types.
 
 #### Topics and messages
 
+The `message-id` of a gossipsub message in the `data_column_sidecar_{subnet_id}`
+topic MUST be the following 20 byte value computed from the message data:
+
+- If `message.data` has a valid snappy decompression, let `MESSAGE_DATA` be the
+  decompressed message data, and let `MESSAGE_PREFIX` be equal to
+  `MESSAGE_DOMAIN_VALID_SNAPPY`.
+- Otherwise let `MESSAGE_DATA` be the raw message data, and let `MESSAGE_PREFIX`
+  be equal to `MESSAGE_DOMAIN_INVALID_SNAPPY`.
+- Let `SIDECAR` be the decoded `MESSAGE_DATA` as a `DataColumnSidecar`
+- Let `COMPLETE_MESSAGE` be equal to 0x01 if
+  `len(sidecar.column) == len(sidecar.kzg_proofs) == len(sidecar.kzg_commitments)`
+  (the message contains all cells), 0x00 otherwise (for an incomplete sidecar).
+- Set `sidecar.column` field to be empty.
+- Set `sidecar.kzg_proofs` field to be empty.
+- Set `message-id` to be the first 20 bytes of the `SHA256` hash of the
+  concatenation of the `MESSAGE_PREFIX`, the serialized `sidecar`, and the
+  `COMPLETE_MESSAGE` value:
+  - i.e. `SHA256(MESSAGE_PREFIX + serialized(sidecar) + COMPLETE_MESSAGE)[:20]`
+
 ##### Global topics
 
 ###### `beacon_block`
